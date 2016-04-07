@@ -20,10 +20,10 @@
 
         <lvc:LineChart Name="Chart" LegendLocation="Top" Series="{Binding ChartSeries}" Margin="10,10,10,69" >
             <lvc:LineChart.AxisY>
-                <lvc:Axis Title="Value" MaxValue="1100" MinValue="0" />
+                <lvc:Axis Title="Value" MaxValue="1100" MinValue="0" LabelFormatter="{Binding YFormatter}" />
             </lvc:LineChart.AxisY>
             <lvc:LineChart.AxisX>
-                <lvc:Axis Separator="{x:Static lvc:DefaultAxes.CleanSeparator}" />
+                <lvc:Axis LabelFormatter="{Binding XFormatter}" Separator="{x:Static lvc:DefaultAxes.CleanSeparator}" />
             </lvc:LineChart.AxisX>
         </lvc:LineChart>
 

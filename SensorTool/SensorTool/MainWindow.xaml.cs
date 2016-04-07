@@ -24,14 +24,18 @@ namespace SensorTool
     public partial class MainWindow : MetroWindow
     {
         PP_ComLib_WrapperClass ppSensor, ppActuator;
+        threadDECdata DECdata;
 
         int I2C_ADDR = 0x00;
-        int ChartPointer = 0;
+        //int ChartPointer = 0;
 
         string lastActiveSensorPort;
         string lastActiveActuatorPort;
 
         public SeriesCollection ChartSeries { get; set; }
+        public Func<double, string> YFormatter { get; set; }
+        public Func<double, string> XFormatter { get; set; }
+
         bool guiRunState = false;
         Thread ioThread = null;
 
@@ -39,12 +43,6 @@ namespace SensorTool
         {
             public string sensorPort;
             public string actuatorPort;
-        }
-
-        struct threadDECdata
-        {
-            public int DECillumination;
-            public int DECtemperature;
         }
 
         public struct GUI_State
@@ -77,6 +75,7 @@ namespace SensorTool
         GUI_State guiStatePrev;
 
         private DispatcherTimer timer = null;
+        private DispatcherTimer ChartTimer = null;
         private int TimerIndex;
 
         //------------------------------------------------------------------------------------------
@@ -270,7 +269,6 @@ namespace SensorTool
                 temperature = (sensorData[0] << 8) + sensorData[1];
                 illumination = (sensorData[2] << 8) + sensorData[3];
 
-                threadDECdata DECdata = new threadDECdata();
                 DECdata.DECtemperature = Convert.ToInt32(temperature);
                 DECdata.DECillumination = Convert.ToInt32(illumination);
 
@@ -280,8 +278,9 @@ namespace SensorTool
                     this.statusBart_Illumination.Content = "Illumination: " + DECdata.DECillumination.ToString();
                     this.statusBart_Temperature.Content = "Temperature: " + DECdata.DECtemperature.ToString();
 
-                    this.Chart.Series[0].Values.Add((double)DECdata.DECillumination);
-                    this.Chart.Series[1].Values.Add((double)DECdata.DECillumination);
+                    //this.Chart.Series[0].Values.Add(
+                    //    new IlluminationViewModel { Illumination = (double)DECdata.DECillumination, DateTime = DateTime.Now });
+                    //this.Chart.Series[1].Values.Add((double)DECdata.DECillumination);
                 }
                 else
                 {
@@ -290,26 +289,27 @@ namespace SensorTool
                     Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
                         this.statusBart_Temperature.Content = "Temperature: " + DECdata.DECtemperature.ToString()));
 
-                    Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
-                        this.Chart.Series[0].Values.Add((double)DECdata.DECillumination)));
-                    Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
-                        this.Chart.Series[1].Values.Add((double)DECdata.DECtemperature)));
+                    //Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                    //    this.Chart.Series[0].Values.Add(
+                    //        new IlluminationViewModel { Illumination = (double)DECdata.DECillumination, DateTime = DateTime.Now })));
+                    //Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                    //    this.Chart.Series[1].Values.Add((double)DECdata.DECtemperature)));
                 }
 
-                ChartPointer++;
-                if (ChartPointer>=100)
-                    if (Application.Current.Dispatcher.CheckAccess())
-                    {
-                        this.Chart.Series[0].Values.RemoveAt(0);
-                        this.Chart.Series[1].Values.RemoveAt(0);
-                    }
-                    else
-                    {
-                        Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
-                        this.Chart.Series[0].Values.RemoveAt(0)));
-                        Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
-                        this.Chart.Series[1].Values.RemoveAt(0)));
-                    }
+                //ChartPointer++;
+                //if (ChartPointer>=100)
+                //    if (Application.Current.Dispatcher.CheckAccess())
+                //    {
+                //        this.Chart.Series[0].Values.RemoveAt(0);
+                //        //this.Chart.Series[1].Values.RemoveAt(0);
+                //    }
+                //    else
+                //    {
+                //        //Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                //        //this.Chart.Series[0].Values.RemoveAt(0)));
+                //        //Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+                //        //this.Chart.Series[1].Values.RemoveAt(0)));
+                //    }
                 
 
                 //if (InvokeRequired)
@@ -360,6 +360,7 @@ namespace SensorTool
 
         private void timer_ElementControllerTick(object sender, EventArgs e)
         {
+            
             //1. Get Current GUI State
             GUI_State guiStateNow;
             string DefaultText = "iTKerry's Sensor Tool :: ";
@@ -387,8 +388,9 @@ namespace SensorTool
                 statusBar_RunningStatus.Content = "Running...";
                 AppStyle_Running();
 
-                //taskbarNotify.Text = DefaultText + "Running";                
+                //taskbarNotify.Text = DefaultText + "Running";
                 this.Title = DefaultText + "Running";
+                ChartTimer.Start();
             }
             else
             {
@@ -401,6 +403,7 @@ namespace SensorTool
                 //taskbarNotify.Text = DefaultText + "Stopped";
 
                 this.Title = DefaultText + "Stopped";
+                ChartTimer.Stop();
             }
 
             //5. Remember current state
@@ -409,6 +412,22 @@ namespace SensorTool
             guiStateNow.threadRunning = false;
 
             TimerIndex++;
+        }
+
+        private void ChartTimerOnTick(object sender, EventArgs eventArgs)
+        {
+            if (Chart.Series[0].Values.Count > 30) Chart.Series[0].Values.RemoveAt(0);
+            Chart.Series[0].Values.Add(new IlluminationViewModel
+            {
+                Illumination = DECdata.DECillumination,
+                DateTime = DateTime.Now
+            });
+            if (Chart.Series[1].Values.Count > 30) Chart.Series[1].Values.RemoveAt(0);
+            Chart.Series[1].Values.Add(new TemperatureViewModel
+            {
+                Temperature = DECdata.DECtemperature,
+                DateTime = DateTime.Now
+            });
         }
 
         public void AppStyle_Stopped()
@@ -452,10 +471,10 @@ namespace SensorTool
             threadParams data = new threadParams();
             GetActivePorts(out data.sensorPort, out data.actuatorPort);
 
-            if ((ioThread != null) && (ioThread.ThreadState == System.Threading.ThreadState.Running))
+            if ((ioThread != null) && (ioThread.ThreadState == ThreadState.Running))
                 return;
 
-            ioThread = new System.Threading.Thread(RunIO_Process);
+            ioThread = new Thread(RunIO_Process);
             ioThread.Start(data);
         }
 
@@ -475,37 +494,42 @@ namespace SensorTool
 
             ppActuator = new PP_ComLib_WrapperClass();
             ppSensor = new PP_ComLib_WrapperClass();
+            DECdata = new threadDECdata();
+            ChartTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
 
             ppActuator.w_ConnectToLatest();
             ppSensor.w_ConnectToLatest();
 
             ppActuator.OnConnect += Connect;
             ppActuator.OnDisconnect += Disconnect;
+            ChartTimer.Tick += ChartTimerOnTick;
 
-            //we create a new SeriesCollection
-            ChartSeries = new SeriesCollection();
+            var IlluminationConfig = new SeriesConfiguration<IlluminationViewModel>().
+                Y(model => model.Illumination).
+                X(model => model.DateTime.ToOADate());
 
-            //create some LineSeries
-            var illuminationSeries = new LineSeries
+            var TemperatureConfig = new SeriesConfiguration<TemperatureViewModel>().
+                Y(model => model.Temperature).
+                X(model => model.DateTime.ToOADate());
+
+            //now we create our series with this configuration
+            ChartSeries = new SeriesCollection(IlluminationConfig)
             {
-                Title = "Illumination",
-                Values = new ChartValues<double> { 0, 0 },
-                PointRadius = 0
+                new LineSeries {
+                    Values = new ChartValues<IlluminationViewModel>(),
+                    PointRadius = 0,
+                    Title = "Illumination",
+                    Fill = Brushes.Transparent },
+                new LineSeries {
+                    Values = new ChartValues<TemperatureViewModel>(),
+                    PointRadius = 0,
+                    Title = "Illumination",
+                    Fill = Brushes.Transparent }
             };
-            var temperatureSeries = new LineSeries
-            {
-                Title = "Temperature",
-                Values = new ChartValues<double> { 0, 0 },
-                PointRadius = 0
-            };
 
-            //add series to SeriesCollection
-            ChartSeries.Add(illuminationSeries);
-            ChartSeries.Add(temperatureSeries);
+            XFormatter = val => DateTime.FromOADate(val).ToString("hh:mm:ss tt");
+            YFormatter = val => Math.Round(val) + "";
 
-            Chart.DisableAnimation = true;
-
-            //that's it, LiveCharts is ready and listening for your data changes.
             DataContext = this;
         }
         #endregion GUI_Events
@@ -521,5 +545,16 @@ namespace SensorTool
         {
             await Task.Delay(1000);
         }
+    }
+
+    public class IlluminationViewModel
+    {
+        public double Illumination { get; set; }
+        public DateTime DateTime { get; set; }
+    }
+    public class TemperatureViewModel
+    {
+        public double Temperature { get; set; }
+        public DateTime DateTime { get; set; }
     }
 }
