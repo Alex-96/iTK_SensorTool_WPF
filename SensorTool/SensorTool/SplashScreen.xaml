@@ -1,0 +1,23 @@
+﻿<Window x:Class="SensorTool.SplashScreen"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SensorTool"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        mc:Ignorable="d"
+        Title="SplashScreen" Height="200" Width="400" 
+        ResizeMode="NoResize" WindowStyle="None"
+        WindowStartupLocation="CenterScreen" 
+        BorderThickness="1" 
+        BorderBrush="Black">
+    <Window.Background>
+        <ImageBrush ImageSource="Media/SensorToolLogo.png" Stretch="Uniform"/>
+    </Window.Background>
+
+    <Grid>
+
+        <Controls:MetroProgressBar IsIndeterminate="True" Margin="174,0,0,26" Foreground="Black" Height="7" VerticalAlignment="Bottom" />
+
+    </Grid>
+</Window>
