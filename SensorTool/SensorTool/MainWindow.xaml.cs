@@ -83,6 +83,12 @@ namespace SensorTool
         //------------------------------------------------------------------------------------------
         #region Aux_Methods
 
+        void GetActivePorts(out string sensorPort, out string actuatorPort)
+        {
+            sensorPort = cmbSensors.SelectedText;
+            actuatorPort = cmbActuators.SelectedText;
+        }
+        
         void LoadPorts()
         {
             string[] ports;
@@ -92,33 +98,33 @@ namespace SensorTool
             ppSensor.GetPorts(out ports, out strError);
 
             //0.  Remember current active ports
-            activeSensorPort = cmbSensors.Text;
-            activeActuatorPort = cmbActuators.Text;
+            GetActivePorts(out activeSensorPort, out  activeActuatorPort)
+//            activeSensorPort = cmbSensors.SelectedText;
+//            activeActuatorPort = cmbActuators.SelectedText;
 
             //1. Load current device list in Sensor List
             cmbSensors.Items.Clear();
-            for (int i = 0; i < ports.Length; i++)
-            {
-                cmbSensors.Items.Add(ports[i]);
-                //if (ports[i] == activeSensorPort) cmbSensors.Text = activeSensorPort;
-                if (ports[i] == lastActiveSensorPort) cmbSensors.Text = lastActiveSensorPort;
-            }
+            cmbSensors.Items.AddRange(ports);
+            if( cmbSensors.Items.Contains(lastActiveSensorPort))cmbSensors.SelectedIndex = cmbSensors.Items.IndexOf(lastActiveSensorPort);
+//            for (int i = 0; i < ports.Length; i++)
+//            {
+//                cmbSensors.Items.Add(ports[i]);
+//                //if (ports[i] == activeSensorPort) cmbSensors.Text = activeSensorPort;
+//                if (ports[i] == lastActiveSensorPort) cmbSensors.Text = lastActiveSensorPort;
+//            }
 
             //2. Load current device list in Actuator List
             cmbActuators.Items.Clear();
-            for (int i = 0; i < ports.Length; i++)
-            {
-                cmbActuators.Items.Add(ports[i]);
-                //if (ports[i] == activeActuatorPort) cmbActuators.Text = activeActuatorPort;
-                if (ports[i] == lastActiveActuatorPort) cmbActuators.Text = lastActiveActuatorPort;
-            }
+            cmbActuators.Items.AddRange(ports);
+            if( cmbActuators.Items.Contains(lastActiveActuatorPort))cmbActuators.SelectedIndex = cmbActuators.Items.IndexOf(lastActiveActuatorPort);
+//            for (int i = 0; i < ports.Length; i++)
+//            {
+//                cmbActuators.Items.Add(ports[i]);
+//                //if (ports[i] == activeActuatorPort) cmbActuators.Text = activeActuatorPort;
+//                if (ports[i] == lastActiveActuatorPort) cmbActuators.Text = lastActiveActuatorPort;
+//            }
         }
 
-        void GetActivePorts(out string sensorPort, out string actuatorPort)
-        {
-            sensorPort = cmbSensors.Text;
-            actuatorPort = cmbActuators.Text;
-        }
 
         delegate void DlgOneStringParam(string port);
 
@@ -458,12 +464,12 @@ namespace SensorTool
 
         private void cmbSensors_SelectedIndexChanged(object sender, EventArgs e)
         {
-            lastActiveSensorPort = cmbSensors.Text;
+            lastActiveSensorPort = cmbSensors.SelectedText;
         }
 
         private void cmbActuators_SelectedIndexChanged(object sender, EventArgs e)
         {
-            lastActiveActuatorPort = cmbActuators.Text;
+            lastActiveActuatorPort = cmbActuators.SelectedText;
         }
 
         private void btnRun_Click_1(object sender, RoutedEventArgs e)
